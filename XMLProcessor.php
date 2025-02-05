@@ -2,9 +2,10 @@
 
 namespace WordPress\XML;
 
-use \WP_HTML_Span;
-use \WP_HTML_Attribute_Token;
-use \WP_HTML_Text_Replacement;
+use WP_HTML_Attribute_Token;
+use WP_HTML_Span;
+use WP_HTML_Text_Replacement;
+
 use function WordPress\Encoding\utf8_codepoint_at;
 
 /**
@@ -964,7 +965,7 @@ class XMLProcessor {
 		if ( $this->is_closing_tag && $tag_ends_at !== $this->bytes_already_parsed ) {
 			$this->bail(
 				'Invalid closing tag encountered.',
-                self::ERROR_SYNTAX
+				self::ERROR_SYNTAX
 			);
 			return false;
 		}
@@ -2986,8 +2987,8 @@ class XMLProcessor {
 
 		// Finish stepping when there are no more tokens in the document.
 		if (
-			XMLProcessor::STATE_INCOMPLETE_INPUT === $this->parser_state ||
-			XMLProcessor::STATE_COMPLETE === $this->parser_state
+			self::STATE_INCOMPLETE_INPUT === $this->parser_state ||
+			self::STATE_COMPLETE === $this->parser_state
 		) {
 			return false;
 		}
@@ -2998,25 +2999,25 @@ class XMLProcessor {
 			}
 		}
 
-        try {
-            switch ( $this->parser_context ) {
-                case self::IN_PROLOG_CONTEXT:
-                    return $this->step_in_prolog( $node_to_process );
-                case self::IN_ELEMENT_CONTEXT:
-                    return $this->step_in_element( $node_to_process );
-                case self::IN_MISC_CONTEXT:
-                    return $this->step_in_misc( $node_to_process );
-                default:
-                    $this->last_error = self::ERROR_UNSUPPORTED;
-                    return false;
-            }
-        } catch (XMLUnsupportedException $e) {
+		try {
+			switch ( $this->parser_context ) {
+				case self::IN_PROLOG_CONTEXT:
+					return $this->step_in_prolog( $node_to_process );
+				case self::IN_ELEMENT_CONTEXT:
+					return $this->step_in_element( $node_to_process );
+				case self::IN_MISC_CONTEXT:
+					return $this->step_in_misc( $node_to_process );
+				default:
+					$this->last_error = self::ERROR_UNSUPPORTED;
+					return false;
+			}
+		} catch ( XMLUnsupportedException $e ) {
 			/*
 			 * Exceptions are used in this class to escape deep call stacks that
 			 * otherwise might involve messier calling and return conventions.
 			 */
 			return false;
-        }
+		}
 	}
 
 	/**
@@ -3042,12 +3043,12 @@ class XMLProcessor {
 
 		// XML requires a root element. If we've reached the end of data in the prolog stage,
 		// before finding a root element, then the document is incomplete.
-		if ( XMLProcessor::STATE_COMPLETE === $this->parser_state ) {
+		if ( self::STATE_COMPLETE === $this->parser_state ) {
 			$this->mark_incomplete_input();
 			return false;
 		}
 		// Do not step if we paused due to an incomplete input.
-		if ( XMLProcessor::STATE_INCOMPLETE_INPUT === $this->parser_state ) {
+		if ( self::STATE_INCOMPLETE_INPUT === $this->parser_state ) {
 			return false;
 		}
 		switch ( $this->get_token_type() ) {
@@ -3094,7 +3095,7 @@ class XMLProcessor {
 		}
 
 		// Do not step if we paused due to an incomplete input.
-		if ( XMLProcessor::STATE_INCOMPLETE_INPUT === $this->parser_state ) {
+		if ( self::STATE_INCOMPLETE_INPUT === $this->parser_state ) {
 			return false;
 		}
 
@@ -3110,15 +3111,16 @@ class XMLProcessor {
 				if ( $this->is_tag_closer() ) {
 					$popped = $this->pop_open_element();
 					if ( $popped !== $tag_name ) {
-						$this->bail( sprintf(
-                            // translators: %1$s is the name of the closing HTML tag, %2$s is the name of the opening HTML tag.
-                            __( 'The closing tag "%1$s" did not match the opening tag "%2$s".' ),
-                            $tag_name,
-                            $popped
-						),
-						self::ERROR_SYNTAX
-					);
-				}
+						$this->bail(
+							sprintf(
+							// translators: %1$s is the name of the closing HTML tag, %2$s is the name of the opening HTML tag.
+								__( 'The closing tag "%1$s" did not match the opening tag "%2$s".' ),
+								$tag_name,
+								$popped
+							),
+							self::ERROR_SYNTAX
+						);
+					}
 					if ( count( $this->stack_of_open_elements ) === 0 ) {
 						$this->parser_context = self::IN_MISC_CONTEXT;
 					}
@@ -3128,8 +3130,8 @@ class XMLProcessor {
 				return true;
 			default:
 				$this->bail(
-                    sprintf(
-					    // translators: %1$s is the unexpected token type.
+					sprintf(
+						// translators: %1$s is the unexpected token type.
 						__( 'Unexpected token type "%1$s" in element stage.', 'data-liberation' ),
 						$this->get_token_type()
 					),
@@ -3162,7 +3164,7 @@ class XMLProcessor {
 		}
 
 		// Do not step if we paused due to an incomplete input.
-		if ( XMLProcessor::STATE_INCOMPLETE_INPUT === $this->parser_state ) {
+		if ( self::STATE_INCOMPLETE_INPUT === $this->parser_state ) {
 			return false;
 		}
 
@@ -3315,7 +3317,7 @@ class XMLProcessor {
 		$this->last_error   = self::ERROR_SYNTAX;
 		_doing_it_wrong( __METHOD__, $error_message, 'WP_VERSION' );
 	}
-    
+
 	/**
 	 * Returns context for why the parser aborted due to unsupported XML, if it did.
 	 *
@@ -3323,9 +3325,9 @@ class XMLProcessor {
 	 *
 	 * @return XMLUnsupportedException|null
 	 */
-    public function get_exception() {
-        return $this->exception;
-    }
+	public function get_exception() {
+		return $this->exception;
+	}
 
 	/**
 	 * Stops the parser and terminates its execution when encountering unsupported markup.
@@ -3335,12 +3337,12 @@ class XMLProcessor {
 	 * @param string $message Explains support is missing in order to parse the current node.
 	 */
 	private function bail( string $message, $reason = self::ERROR_UNSUPPORTED ) {
-        $starts_at = $this->token_starts_at ?? strlen( $this->xml );
-        $length = $this->token_length ?? 0;
-        $token = substr( $this->xml, $starts_at, $length );
+		$starts_at = $this->token_starts_at ?? strlen( $this->xml );
+		$length    = $this->token_length ?? 0;
+		$token     = substr( $this->xml, $starts_at, $length );
 
 		$this->last_error = $reason;
-		$this->exception = new XMLUnsupportedException(
+		$this->exception  = new XMLUnsupportedException(
 			$message,
 			$this->get_token_type(),
 			$starts_at,
